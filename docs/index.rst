@@ -7,7 +7,7 @@ Welcome to |project| documentation!
    history
 
 
-.. automodule:: skeleton
+.. automodule:: neon_monitor
     :members:
     :undoc-members:
     :show-inheritance:
