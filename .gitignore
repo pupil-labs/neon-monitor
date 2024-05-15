@@ -187,6 +187,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!neon_monitor.spec
 
 # Installer logs
 pip-log.txt
