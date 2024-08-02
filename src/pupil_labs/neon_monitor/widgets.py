@@ -45,10 +45,9 @@ class MonitorWindow(QMainWindow):
         self.statusBar().showMessage("Searching for devices...")
 
         app = QApplication.instance()
-        app.companion_worker.device_connected.connect(self.on_device_connected)
-        app.companion_worker.device_disconnected.connect(self.on_device_disconnected)
-        app.companion_worker.found_devices.connect(self.on_devices_found)
-        app.companion.subscribe('matched_scene_and_gaze', self.on_scene_and_gaze_ready)
+        app.device_connected.connect(self.on_device_connected)
+        app.device_disconnected.connect(self.on_device_disconnected)
+        app.searcher.found_devices.connect(self.on_devices_found)
 
     def on_devices_found(self, devices):
         if len(devices) == 0:
@@ -57,7 +56,8 @@ class MonitorWindow(QMainWindow):
             self.statusBar().showMessage(f"Discovered {len(devices)} device(s)")
 
     def on_device_connected(self, device):
-        self.statusBar().showMessage(f"Waiting for stream from {device['address']}:{device['port']}...")
+        self.statusBar().showMessage(f"Waiting for stream from {device.address}:{device.port}...")
+        device.matched_scene_and_gaze_data_ready.connect(self.on_scene_and_gaze_ready)
 
     def on_device_disconnected(self):
         self.statusBar().showMessage("Disconnected.")
@@ -177,12 +177,15 @@ class GazeOnSceneView(ScaledImageView):
         super().__init__()
 
         app = QApplication.instance()
-        app.companion.subscribe('matched_scene_and_gaze', self.on_scene_and_gaze_ready)
-        app.companion_worker.device_disconnected.connect(self.update)
+        app.device_connected.connect(self.on_device_connected)
+        app.device_disconnected.connect(self.update)
 
         self.pen = None
         self.scale = 1.0
         self.offset = QPoint(0, 0)
+
+    def on_device_connected(self, device):
+        device.matched_scene_and_gaze_data_ready.connect(self.on_scene_and_gaze_ready)
 
     def on_scene_and_gaze_ready(self, scene_and_gaze):
         self.gaze = scene_and_gaze.gaze
@@ -232,12 +235,12 @@ class CompanionLineForm(QWidget):
         self.layout().addWidget(self.connect_button)
 
         app = QApplication.instance()
-        app.companion_worker.device_connected.connect(self.on_device_connected)
-        app.companion_worker.device_disconnected.connect(self.on_device_disconnected)
+        app.device_connected.connect(self.on_device_connected)
+        app.device_disconnected.connect(self.on_device_disconnected)
 
         self.device_combo.initiate_refresh()
 
-    def on_device_connected(self):
+    def on_device_connected(self, device):
         self.connect_button.setText("Disconnect")
         self.device_combo.setEnabled(False)
 
@@ -247,12 +250,12 @@ class CompanionLineForm(QWidget):
 
     def toggle_connection(self):
         app = QApplication.instance()
-        if app.companion_device is None:
+        if app.device is None:
             device_info = self.device_combo.selected_device
-            app.companion.connect_to_device(device_info["address"], device_info["port"])
+            app.connect_to_device(device_info["address"], device_info["port"])
 
         else:
-            app.companion.disconnect_device()
+            app.disconnect_device()
 
 
 class DeviceCombo(QComboBox):
@@ -264,12 +267,12 @@ class DeviceCombo(QComboBox):
         self.addItem("Manual Entry")
 
         self.currentIndexChanged.connect(self.on_index_changed)
-        QApplication.instance().companion_worker.found_devices.connect(self.on_devices_found)
+        QApplication.instance().searcher.found_devices.connect(self.on_devices_found)
 
     def initiate_refresh(self):
         self.setEnabled(False)
         self.searching_changed.emit(True)
-        QApplication.instance().companion.search()
+        QApplication.instance().searcher.search()
         self.setItemText(self.currentIndex(), "Searching...")
 
     def on_devices_found(self, devices):
