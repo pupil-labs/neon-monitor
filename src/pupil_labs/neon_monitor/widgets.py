@@ -1,10 +1,10 @@
 from PySide6.QtCore import Qt, QRect, QSize, QPoint, Signal
 
 from PySide6.QtWidgets import (
-    QApplication, QWidget,
-    QLabel, QComboBox, QPushButton, QToolButton,
+    QApplication, QMainWindow, QWidget,
+    QComboBox, QPushButton,
     QVBoxLayout, QHBoxLayout,
-    QGraphicsDropShadowEffect,
+    QDockWidget,
 )
 
 from PySide6.QtGui import (
@@ -29,7 +29,7 @@ def qimage_from_frame(frame):
     return QImage(frame.data, width, height, bytes_per_line, image_format)
 
 
-class MonitorWindow(QWidget):
+class MonitorWindow(QMainWindow):
     closed = Signal()
 
     def __init__(self):
@@ -39,13 +39,10 @@ class MonitorWindow(QWidget):
         self.resize(1200, 800)
         self.setLayout(QVBoxLayout())
 
-        self.companion_form = CompanionLineForm()
+        self.make_dock(CompanionLineForm(), "Device", Qt.DockWidgetArea.TopDockWidgetArea)
         self.scene_view = GazeOnSceneView()
-        self.status_label = QLabel("Searching for devices...")
-
-        self.layout().addWidget(self.companion_form)
-        self.layout().addWidget(self.scene_view, 1)
-        self.layout().addWidget(self.status_label)
+        self.setCentralWidget(self.scene_view)
+        self.statusBar().showMessage("Searching for devices...")
 
         app = QApplication.instance()
         app.companion_worker.device_connected.connect(self.on_device_connected)
@@ -55,22 +52,45 @@ class MonitorWindow(QWidget):
 
     def on_devices_found(self, devices):
         if len(devices) == 0:
-            self.status_label.setText("No devices discovered. Please enter address manually.")
+            self.statusBar().showMessage("No devices discovered. Please enter address manually.")
         else:
-            self.status_label.setText(f"Discovered {len(devices)} device(s)")
+            self.statusBar().showMessage(f"Discovered {len(devices)} device(s)")
 
     def on_device_connected(self, device):
-        self.status_label.setText(f"Waiting for stream from {device['address']}:{device['port']}...")
+        self.statusBar().showMessage(f"Waiting for stream from {device['address']}:{device['port']}...")
 
     def on_device_disconnected(self):
-        self.status_label.setText("Disconnected.")
+        self.statusBar().showMessage("Disconnected.")
 
     def on_scene_and_gaze_ready(self, scene_and_gaze):
-        self.status_label.setText(f"Scene timestamp: {scene_and_gaze.frame.timestamp_unix_seconds}")
+        self.statusBar().showMessage(f"Scene timestamp: {scene_and_gaze.frame.timestamp_unix_seconds}")
 
     def closeEvent(self, event):
         super().closeEvent(event)
         self.closed.emit()
+
+    def make_dock(self, widget, name, dock_area=None):
+        dock = DockWidget(self, widget, name)
+
+        if dock_area is None or dock_area == Qt.DockWidgetArea.NoDockWidgetArea:
+            dock.setFloating(True)
+            dock.show()
+        else:
+            self.addDockWidget(dock_area, dock)
+
+        return dock
+
+
+class DockWidget(QDockWidget):
+    def __init__(self, parent, widget, name):
+        super().__init__(name, parent)
+
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.setContentsMargins(0, 0, 0, 0)
+        self.setWidget(widget)
+
+        features = QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+        self.setFeatures(features)
 
 
 class ScaledImageView(QWidget):
