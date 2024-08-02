@@ -1,28 +1,8 @@
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QThread, Signal
 
-from pupil_labs.neon_monitor.widgets import GazeOnSceneView, CompanionLineForm
+from pupil_labs.neon_monitor.widgets import MonitorWindow
 from pupil_labs.neon_monitor.companion_worker import CompanionWorker, CompanionInterface
-
-
-class MonitorWindow(QWidget):
-    closed = Signal()
-
-    def __init__(self):
-        super().__init__()
-
-        self.setMinimumSize(400, 400)
-        self.setLayout(QVBoxLayout())
-
-        self.companion_form = CompanionLineForm()
-        self.scene_view = GazeOnSceneView()
-
-        self.layout().addWidget(self.companion_form)
-        self.layout().addWidget(self.scene_view, 1)
-
-    def closeEvent(self, event):
-        super().closeEvent(event)
-        self.closed.emit()
 
 
 class MonitorApp(QApplication):

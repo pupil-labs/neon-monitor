@@ -24,8 +24,7 @@ class CompanionInterface(QObject):
             'matched_scene_and_gaze': worker.matched_scene_and_gaze_data_ready,
         }
 
-        self.subscription_callbacks = {key:[] for key in self.service_signal_map}
-
+        self.subscription_callbacks = {key: [] for key in self.service_signal_map}
 
     def subscribe(self, service, slot):
         if slot not in self.subscription_callbacks[service]:
@@ -33,8 +32,6 @@ class CompanionInterface(QObject):
             self.service_signal_map[service].connect(slot)
 
         self.sig_set_service_enabled.emit(service, True)
-
-
 
     def unsubscribe(self, service, slot):
         if slot in self.subscription_callbacks[service]:
@@ -44,17 +41,15 @@ class CompanionInterface(QObject):
         if len(self.subscription_callbacks[service]) == 0:
             self.sig_set_service_enabled.emit(service, False)
 
-
     def search(self):
         self.sig_search.emit()
-
 
     def connect_to_device(self, *args):
         self.sig_connect.emit(*args)
 
-
     def disconnect_device(self):
         self.sig_disconnect.emit()
+
 
 class CompanionWorker(QObject):
     found_devices = Signal(list)
@@ -82,13 +77,11 @@ class CompanionWorker(QObject):
             'matched_scene_and_gaze': False,
         }
 
-
     def search(self):
         devices = discover_devices(search_duration_seconds=3.0)
         device_metas = [self.device_to_dict(d) for d in devices]
 
         self.found_devices.emit(device_metas)
-
 
     def connect_to_device(self, ip, port):
         try:
@@ -103,7 +96,6 @@ class CompanionWorker(QObject):
             print(exc)
             self.device_disconnected.emit()
 
-
     def set_service_enabled(self, service, enabled):
         self.service_statuses[service] = enabled
 
@@ -113,7 +105,6 @@ class CompanionWorker(QObject):
 
         else:
             self.poll_timer.stop()
-
 
     def poll(self):
         if self.service_statuses['imu']:
@@ -141,8 +132,13 @@ class CompanionWorker(QObject):
             self.device.close()
             self.poll_timer.stop()
 
-
     def device_to_dict(self, device):
+#       calibration = None
+#       try:
+#           calibration = device.get_calibration()
+#       except:
+#           pass
+
         return {
             "phone_ip": device.phone_ip,
             "phone_name": device.phone_name,
@@ -151,9 +147,8 @@ class CompanionWorker(QObject):
             "dns_name": device.dns_name,
             "full_name": device.full_name,
             "port": device.port,
-            "calibration": device.get_calibration(),
+#            "calibration": device.get_calibration(),
         }
-
 
     def disconnect_device(self):
         if self.device is not None:
