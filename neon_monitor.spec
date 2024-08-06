@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='src/pupil_labs/neon_monitor/resources/neon_monitor.ico'
+    icon='src/pupil_labs/neon_monitor/resources/neon-monitor.ico'
 )
