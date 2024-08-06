@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="64"
+   height="64"
+   viewBox="0 0 51.2 51.2"
+   fill="none"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <circle
+     cx="25.6"
+     cy="25.6"
+     stroke="#f44336"
+     stroke-width="2.02105"
+     id="circle1"
+     r="18.189474" />
+  <rect
+     x="19.131821"
+     y="19.131821"
+     width="12.934777"
+     height="12.934777"
+     rx="2.4252632"
+     fill="#f44336"
+     id="rect1"
+     style="stroke-width:1.21263" />
+</svg>

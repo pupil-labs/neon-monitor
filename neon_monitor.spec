@@ -5,7 +5,7 @@ a = Analysis(
     ['src/pupil_labs/neon_monitor/app.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('src/pupil_labs/neon_monitor/resources/*', 'pupil_labs/neon_monitor/resources')],
     hiddenimports=["zeroconf._utils.ipaddress", "zeroconf._handlers.answers"],
     hookspath=[],
     hooksconfig={},
@@ -35,4 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='src/pupil_labs/neon_monitor/resources/neon_monitor.ico'
 )

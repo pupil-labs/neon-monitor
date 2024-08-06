@@ -1,4 +1,7 @@
+import pkg_resources
+
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QIcon
 from PySide6.QtCore import Signal
 
 from pupil_labs.realtime_api.simple import Device
@@ -24,6 +27,8 @@ class MonitorApp(QApplication):
 
         self.main_window = MonitorWindow()
         self.main_window.closed.connect(self.on_window_closed)
+
+        self.setWindowIcon(QIcon(pkg_resources.resource_filename('pupil_labs.neon_monitor.resources', 'PPL-Favicon-144x144.png')))
 
     def exec(self):
         self.main_window.show()

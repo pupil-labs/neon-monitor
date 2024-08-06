@@ -1,3 +1,5 @@
+import pkg_resources
+
 from PySide6.QtCore import (
     Qt, QRect, QSize, QPoint, Signal,
     QTimer,
@@ -5,14 +7,14 @@ from PySide6.QtCore import (
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
-    QComboBox, QPushButton,
+    QComboBox, QPushButton, QToolButton,
     QVBoxLayout, QHBoxLayout, QGridLayout,
     QDockWidget, QScrollArea,
-    QLineEdit,
+    QLineEdit, QSizePolicy,
 )
 
 from PySide6.QtGui import (
-    QPainter, QImage, QPixmap,
+    QPainter, QImage, QPixmap, QIcon,
 )
 
 
@@ -360,9 +362,15 @@ class ControlsWidget(QWidget):
 
         self.setLayout(QVBoxLayout())
 
-        self.record_button = QPushButton("Record")
+        self.record_button = QToolButton()
+        self.record_button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.record_button.setIconSize(QSize(48, 48))
+        self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.event_list = EventListWidget()
+
+        self.start_recording_icon = QIcon(pkg_resources.resource_filename('pupil_labs.neon_monitor.resources', 'start-recording.svg'))
+        self.stop_recording_icon = QIcon(pkg_resources.resource_filename('pupil_labs.neon_monitor.resources', 'stop-recording.svg'))
 
         scroll_area = QScrollArea()
         scroll_area.setStyleSheet("QScrollArea { border: none; }")
@@ -376,13 +384,16 @@ class ControlsWidget(QWidget):
 
         self.record_button.clicked.connect(self.on_record_clicked)
         self._is_recording = False
+        self.set_recording_state(False)
 
     def set_recording_state(self, is_recording):
         self._is_recording = is_recording
-        if not self._is_recording:
-            self.record_button.setText("Record")
+        if self._is_recording:
+            self.record_button.setIcon(self.stop_recording_icon)
+            self.record_button.setText("Stop")
         else:
-            self.record_button.setText("STOP")
+            self.record_button.setIcon(self.start_recording_icon)
+            self.record_button.setText("Record")
 
     def on_record_clicked(self):
         app = QApplication.instance()
