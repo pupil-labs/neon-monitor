@@ -1,10 +1,14 @@
-from PySide6.QtCore import Qt, QRect, QSize, QPoint, Signal
+from PySide6.QtCore import (
+    Qt, QRect, QSize, QPoint, Signal,
+    QTimer,
+)
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QComboBox, QPushButton,
-    QVBoxLayout, QHBoxLayout,
-    QDockWidget,
+    QVBoxLayout, QHBoxLayout, QGridLayout,
+    QDockWidget, QScrollArea,
+    QLineEdit,
 )
 
 from PySide6.QtGui import (
@@ -39,15 +43,34 @@ class MonitorWindow(QMainWindow):
         self.resize(1200, 800)
         self.setLayout(QVBoxLayout())
 
+        self.controls_widget = ControlsWidget()
+        self.controls_widget.setDisabled(True)
+
         self.make_dock(CompanionLineForm(), "Device", Qt.DockWidgetArea.TopDockWidgetArea)
+        self.make_dock(self.controls_widget, "Controls", Qt.DockWidgetArea.RightDockWidgetArea)
+
         self.scene_view = GazeOnSceneView()
         self.setCentralWidget(self.scene_view)
         self.statusBar().showMessage("Searching for devices...")
+
+        self.recording_check_timer = QTimer()
+        self.recording_check_timer.setInterval(1000)
+        self.recording_check_timer.timeout.connect(self.update_recording_status)
+        self.recording_check_timer.start()
 
         app = QApplication.instance()
         app.device_connected.connect(self.on_device_connected)
         app.device_disconnected.connect(self.on_device_disconnected)
         app.searcher.found_devices.connect(self.on_devices_found)
+
+    def update_recording_status(self):
+        app = QApplication.instance()
+        if app.device is None:
+            return
+
+        recording = app.device._status.recording
+        is_recording = recording is not None and recording.action == "START"
+        self.controls_widget.set_recording_state(is_recording)
 
     def on_devices_found(self, devices):
         if len(devices) == 0:
@@ -58,9 +81,11 @@ class MonitorWindow(QMainWindow):
     def on_device_connected(self, device):
         self.statusBar().showMessage(f"Waiting for stream from {device.address}:{device.port}...")
         device.matched_scene_and_gaze_data_ready.connect(self.on_scene_and_gaze_ready)
+        self.controls_widget.setDisabled(False)
 
     def on_device_disconnected(self):
         self.statusBar().showMessage("Disconnected.")
+        self.controls_widget.setDisabled(True)
 
     def on_scene_and_gaze_ready(self, scene_and_gaze):
         self.statusBar().showMessage(f"Scene timestamp: {scene_and_gaze.frame.timestamp_unix_seconds}")
@@ -79,6 +104,12 @@ class MonitorWindow(QMainWindow):
             self.addDockWidget(dock_area, dock)
 
         return dock
+
+    def keyPressEvent(self, event):
+        if event.text() >= "0" and event.text() <= "9":
+            print(event)
+            app = QApplication.instance()
+            app.send_event(int(event.text()))
 
 
 class DockWidget(QDockWidget):
@@ -321,3 +352,64 @@ class DeviceCombo(QComboBox):
                 "address": ip,
                 "port": port
             }
+
+
+class ControlsWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setLayout(QVBoxLayout())
+
+        self.record_button = QPushButton("Record")
+
+        self.event_list = EventListWidget()
+
+        scroll_area = QScrollArea()
+        scroll_area.setStyleSheet("QScrollArea { border: none; }")
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setWidget(self.event_list)
+        scroll_area.setWidgetResizable(True)
+
+        self.layout().addWidget(self.record_button)
+        self.layout().addWidget(scroll_area)
+        self.layout().addWidget(QWidget(), 1)
+
+        self.record_button.clicked.connect(self.on_record_clicked)
+        self._is_recording = False
+
+    def set_recording_state(self, is_recording):
+        self._is_recording = is_recording
+        if not self._is_recording:
+            self.record_button.setText("Record")
+        else:
+            self.record_button.setText("STOP")
+
+    def on_record_clicked(self):
+        app = QApplication.instance()
+        if self._is_recording:
+            app.device.recording_stop_and_save()
+        else:
+            app.device.recording_start()
+
+
+class EventListWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setLayout(QGridLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        app = QApplication.instance()
+
+        for idx in range(10):
+            idx_p = (idx + 1) % 10
+
+            button = QPushButton(f"{idx_p}")
+            line_edit = QLineEdit(f"Event {idx_p}")
+
+            self.layout().addWidget(button, idx, 0)
+            self.layout().addWidget(line_edit, idx, 1)
+
+            button.clicked.connect(lambda _, event_id=idx_p: app.send_event(event_id))
+            line_edit.textChanged.connect(lambda text, event_id=idx_p, widget=line_edit: app.set_event_text(event_id, text))
+
+            app.set_event_text(idx_p, line_edit.text())

@@ -13,12 +13,14 @@ class MonitorApp(QApplication):
 
     def __init__(self):
         super().__init__()
+
         self.setApplicationDisplayName("Neon Monitor")
         self.setQuitOnLastWindowClosed(False)
 
         self.searcher = CompanionSearcher()
 
         self.device = None
+        self.event_texts = {}
 
         self.main_window = MonitorWindow()
         self.main_window.closed.connect(self.on_window_closed)
@@ -41,6 +43,16 @@ class MonitorApp(QApplication):
             self.device.close()
             self.device_disconnected.emit()
             self.device = None
+
+    def set_event_text(self, event_id, text):
+        self.event_texts[event_id] = text
+
+    def send_event(self, event_id):
+        if self.device is None:
+            return
+
+        text = self.event_texts[event_id]
+        self.device.send_event(text)
 
 
 def main():
