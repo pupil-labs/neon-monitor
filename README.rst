@@ -19,3 +19,9 @@
 
 .. image:: https://img.shields.io/badge/skeleton-2022-informational
    :target: https://blog.jaraco.com/skeleton
+
+************************
+Neon Monitor Desktop App
+************************
+
+A very simple desktop application which attempts to offer similar functionality to `Neon's built-in, web-based monitor app <https://docs.pupil-labs.com/neon/data-collection/ecosystem-overview/#neon-monitor>`_.
